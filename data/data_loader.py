@@ -184,21 +184,15 @@ class Dataset_ETT_minute(Dataset):
     def inverse_transform(self, data):
         return self.scaler.inverse_transform(data)
 
-
 class Dataset_Custom(Dataset):
-    def __init__(self, root_path, flag='train', size=None, 
-                 features='S', data_path='ETTh1.csv', 
-                 target='OT', scale=True, inverse=False, timeenc=0, freq='h', cols=None):
+    def __init__(self, root_path, size:list, flag='train', 
+                 features='MS', data_path='custom.csv', 
+                 target='Close', scale=True, inverse=False, timeenc=0, freq='d', cols=None,):
         # size [seq_len, label_len, pred_len]
         # info
-        if size == None:
-            self.seq_len = 24*4*4
-            self.label_len = 24*4
-            self.pred_len = 24*4
-        else:
-            self.seq_len = size[0]
-            self.label_len = size[1]
-            self.pred_len = size[2]
+        self.seq_len = size[0]
+        self.label_len = size[1]
+        self.pred_len = size[2]
         # init
         assert flag in ['train', 'test', 'val']
         type_map = {'train':0, 'val':1, 'test':2}
@@ -217,18 +211,19 @@ class Dataset_Custom(Dataset):
 
     def __read_data__(self):
         self.scaler = StandardScaler()
+        print(os.path.join(self.root_path,self.data_path))
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
+        
         '''
         df_raw.columns: ['date', ...(other features), target feature]
         '''
-        # cols = list(df_raw.columns); 
+
         if self.cols:
             cols=self.cols.copy()
-            cols.remove(self.target)
         else:
-            cols = list(df_raw.columns); cols.remove(self.target); cols.remove('date')
-        df_raw = df_raw[['date']+cols+[self.target]]
+            cols=list(df_raw.columns[1:])
+
 
         num_train = int(len(df_raw)*0.7)
         num_test = int(len(df_raw)*0.2)
@@ -239,8 +234,7 @@ class Dataset_Custom(Dataset):
         border2 = border2s[self.set_type]
         
         if self.features=='M' or self.features=='MS':
-            cols_data = df_raw.columns[1:]
-            df_data = df_raw[cols_data]
+            df_data= df_raw[cols]
         elif self.features=='S':
             df_data = df_raw[[self.target]]
 
@@ -251,8 +245,8 @@ class Dataset_Custom(Dataset):
         else:
             data = df_data.values
             
-        df_stamp = df_raw[['date']][border1:border2]
-        df_stamp['date'] = pd.to_datetime(df_stamp.date)
+        df_stamp = df_raw[['trade_date']][border1:border2]
+        df_stamp['trade_date'] = pd.to_datetime(df_stamp.trade_date,format='%Y%m%d')
         data_stamp = time_features(df_stamp, timeenc=self.timeenc, freq=self.freq)
 
         self.data_x = data[border1:border2]
