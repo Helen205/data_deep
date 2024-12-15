@@ -186,7 +186,7 @@ class Dataset_ETT_minute(Dataset):
 
 class Dataset_Custom(Dataset):
     def __init__(self, root_path, size:list, flag='train', 
-                 features='MS', data_path='custom.csv', 
+                 features='MS', data_path='CSI300.csv', 
                  target='Close', scale=True, inverse=False, timeenc=0, freq='d', cols=None,):
         # size [seq_len, label_len, pred_len]
         # info
